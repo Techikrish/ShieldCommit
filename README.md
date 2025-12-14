@@ -4,6 +4,8 @@ ShieldCommit is a lightweight security CLI tool that helps prevent accidental
 secret leaks by scanning Git commits for sensitive information such as
 cloud credentials, API keys, and tokens.
 
+ ![logo.png](logo.png)
+
 This project is currently in **beta** and actively evolving.
 
 ---
@@ -78,4 +80,37 @@ This project is intentionally evolving, with features added based on real-world 
 
 ```bash
 pip install shieldcommit  
+```
   
+Verify installation:
+
+```bash
+shieldcommit --help
+```
+
+## 🔧 Getting Started (Quick Setup)
+
+**2️⃣ Initialize a Git repository (if not already)**
+
+```bash
+git init
+```
+
+**3️⃣ Install ShieldCommit Git hook**
+
+```bash
+shieldcommit install
+```
+
+✅ This installs a **pre-commit hook** in your repository.
+
+## 🔒 How It Works
+
+Once installed:
+
+- Every `git commit` automatically scans **staged files**
+- If secrets are detected → **commit is blocked**
+- You'll see the file, line number, and matched pattern
+- Fix or remove the secret, then commit again
+
+This ensures secrets never accidentally reach your Git history.
