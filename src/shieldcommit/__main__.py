@@ -48,7 +48,20 @@ def scan(paths):
             click.echo("No staged files. Use `shieldcommit scan <paths>` to scan files or set staged files.")
             sys.exit(0)
 
-    findings = scan_files(to_scan)
+    result = scan_files(to_scan)
+    findings = result["findings"]
+    warnings = result["warnings"]
+    
+    # Display warnings (non-blocking)
+    if warnings:
+        click.echo("⚠️  VERSION WARNINGS (Info only - no block):\n")
+        for w in warnings:
+            click.echo(f"File: {w['file']} (line {w['line']})")
+            click.echo(f"  {w['message']}")
+            click.echo(f"  Snippet: {w['snippet']}")
+            click.echo("")
+    
+    # Display findings (blocking)
     if not findings:
         click.echo("✓ No secrets found.")
         sys.exit(0)
@@ -56,7 +69,8 @@ def scan(paths):
     click.echo("❌ Secrets detected!\n")
     for f in findings:
         click.echo(f"File: {f['file']} (line {f['line']})")
-        click.echo(f"  Pattern: {f['pattern']}")
+        click.echo(f"  Detection: {f.get('detection_method', f.get('pattern', 'Unknown'))}")
+        click.echo(f"  Confidence: {f.get('confidence', 'N/A'):.2%}")
         click.echo(f"  Snippet: {f['snippet']}")
         click.echo("")
     click.echo("Your commit or action has been blocked. Remove or rotate secrets before proceeding.")
