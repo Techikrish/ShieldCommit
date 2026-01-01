@@ -4,7 +4,7 @@ Detects deprecated database engine versions on Azure
 """
 
 import pytest
-from src.shieldcommit.azure_db_detector import scan_azure_db_versions
+from shieldcommit.azure_db_detector import scan_azure_db_versions
 from pathlib import Path
 import tempfile
 

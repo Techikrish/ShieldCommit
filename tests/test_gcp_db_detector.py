@@ -4,7 +4,7 @@ Detects deprecated database engine versions on Google Cloud SQL
 """
 
 import pytest
-from src.shieldcommit.gcp_db_detector import scan_gcp_cloudsql_versions
+from shieldcommit.gcp_db_detector import scan_gcp_cloudsql_versions
 from pathlib import Path
 import tempfile
 

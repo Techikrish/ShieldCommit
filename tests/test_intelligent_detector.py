@@ -4,7 +4,7 @@ Tests the core intelligent detection engine (entropy, semantic, format-based)
 """
 
 import pytest
-from src.shieldcommit.intelligent_detector import IntelligentDetector, detect_secrets
+from shieldcommit.intelligent_detector import IntelligentDetector, detect_secrets
 
 
 class TestEntropyDetection:

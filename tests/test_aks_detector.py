@@ -4,7 +4,7 @@ Detects deprecated/extended support Kubernetes versions on Azure
 """
 
 import pytest
-from src.shieldcommit.aks_detector import scan_aks_versions
+from shieldcommit.aks_detector import scan_aks_versions
 from pathlib import Path
 import tempfile
 

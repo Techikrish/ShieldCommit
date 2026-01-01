@@ -4,7 +4,7 @@ Detects deprecated/extended support Kubernetes versions
 """
 
 import pytest
-from src.shieldcommit.eks_detector import scan_eks_versions
+from shieldcommit.eks_detector import scan_eks_versions
 from pathlib import Path
 import tempfile
 

@@ -4,7 +4,7 @@ Detects deprecated database engine versions
 """
 
 import pytest
-from src.shieldcommit.rds_detector import scan_rds_versions
+from shieldcommit.rds_detector import scan_rds_versions
 from pathlib import Path
 import tempfile
 

@@ -4,7 +4,7 @@ Detects deprecated/extended support Kubernetes versions on Google Cloud
 """
 
 import pytest
-from src.shieldcommit.gcp_detector import scan_gcp_versions
+from shieldcommit.gcp_detector import scan_gcp_versions
 from pathlib import Path
 import tempfile
 
