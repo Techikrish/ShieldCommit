@@ -191,39 +191,61 @@ All tests: **PASSING ✅**
 
 ## 📦 Installation
 
+Install ShieldCommit via pip:
+
 ```bash
-pip install shieldcommit  
+pip install shieldcommit
 ```
-  
-Verify installation:
+
+Verify the installation:
 
 ```bash
 shieldcommit --help
 ```
 
-## 🔧 Getting Started (Quick Setup)
+## 🚀 Quick Start (60 seconds)
 
-**2️⃣ Initialize a Git repository (if not already)**
-
+### Step 1: Initialize Git (if needed)
 ```bash
+cd your-project
 git init
 ```
 
-**3️⃣ Install ShieldCommit Git hook**
-
+### Step 2: Install ShieldCommit Hook
 ```bash
 shieldcommit install
 ```
 
-✅ This installs a **pre-commit hook** in your repository.
+✅ **Done!** ShieldCommit is now protecting your commits.
+
+### Step 3: Try It (optional)
+To test if it works, try committing a fake secret:
+```bash
+echo "aws_secret_access_key = AKIAIOSFODNN7EXAMPLE" > config.txt
+git add config.txt
+git commit -m "test commit"  # ← This will be BLOCKED ✅
+```
 
 ## 🔒 How It Works
 
-Once installed:
+Once installed as a **Git pre-commit hook**:
 
-- Every `git commit` automatically scans **staged files**
-- If secrets are detected → **commit is blocked**
-- You'll see the file, line number, and matched pattern
-- Fix or remove the secret, then commit again
+1. **Every commit** automatically scans staged files
+2. **Secrets detected** → Commit is blocked
+3. **You see**: File name, line number, confidence level, and detection method
+4. **Fix the secret** → Commit again
+5. **Never leaks** → Secrets stay out of Git history
 
-This ensures secrets never accidentally reach your Git history.
+### Example Output
+When a secret is detected:
+```
+❌ Secret detected in config.txt:
+
+File: config.txt
+Line: 5
+Type: AWS Access Key (Format Detection)
+Confidence: 95%
+Value: AKIA... (masked)
+
+Fix the secret and try again!
+```

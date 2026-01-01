@@ -52,12 +52,20 @@ git remote -v
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# Install dependencies (includes dev tools)
 pip install -e ".[dev]"
 
 # Run tests
 pytest tests/ -v
 ```
+
+**💡 Pro Tip**: The `[dev]` extras include everything needed for development:
+- **pytest** - Testing framework
+- **flake8** - Linting
+- **black** - Code formatter
+- **isort** - Import sorting
+- **bandit** - Security scanning
+- **safety** - Dependency vulnerability checking
 
 ---
 
