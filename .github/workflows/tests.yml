@@ -32,7 +32,7 @@ jobs:
         flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
     
     - name: Format check with black
-      run: black --check src/ tests/
+      run: black --check src/ tests/ --line-length=100
     
     - name: Test with pytest
       run: pytest tests/ -v
