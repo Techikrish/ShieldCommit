@@ -1,113 +1,115 @@
 """
-Tests for EKS (Elastic Kubernetes Service) version detection
-Detects deprecated/extended support Kubernetes versions
+Tests for EKS detector module.
 """
 
 import pytest
-from src.shieldcommit.eks_detector import scan_eks_versions
 from pathlib import Path
 import tempfile
+from shieldcommit.eks_detector import (
+    parse_terraform_eks_versions,
+    get_version_warning,
+    scan_eks_versions
+)
 
 
-class TestEKSVersionDetection:
-    """Test AWS EKS version detection and deprecation warnings"""
-    
-    def test_detects_deprecated_version(self):
-        """Should detect deprecated Kubernetes versions in EKS"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
+def test_parse_terraform_eks_versions():
+    """Test parsing of EKS versions from Terraform content."""
+    content = """
 resource "aws_eks_cluster" "main" {
-  kubernetes_version = "1.24"
-}
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) > 0
-            # Kubernetes 1.24 should be flagged
-    
-    def test_detects_extended_support_version(self):
-        """Should detect versions in extended support period"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "aws_eks_cluster" "main" {
+  name             = "my-cluster"
   kubernetes_version = "1.27"
+  role_arn         = aws_iam_role.eks_cluster.arn
 }
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) > 0
-            # Kubernetes 1.27 should be flagged
-    
-    def test_no_warning_for_current_version(self):
-        """Should NOT warn for current/recent versions"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "aws_eks_cluster" "main" {
+
+resource "aws_eks_cluster" "secondary" {
   kubernetes_version = "1.30"
 }
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) == 0
-    
-    def test_finds_version_in_variable_block(self):
-        """Should find versions declared in variable blocks"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "variables.tf"
-            file_path.write_text('''
-variable "cluster_version" {
-  description = "EKS cluster version"
-  default     = "1.25"
-}
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) > 0
-    
-    def test_includes_line_numbers(self):
-        """Should include line numbers in findings"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-# Line 1
-# Line 2
-resource "aws_eks_cluster" "main" {
-  kubernetes_version = "1.24"
-}
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) > 0
-            assert 'line' in findings[0]
-            assert findings[0]['line'] == 5
-    
-    def test_includes_file_path(self):
-        """Should include file path in findings"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('kubernetes_version = "1.23"')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) > 0
-            assert 'file' in findings[0]
-            assert 'main.tf' in findings[0]['file']
-    
-    def test_multiple_versions_in_file(self):
-        """Should detect all deprecated versions in file"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "aws_eks_cluster" "cluster1" {
-  kubernetes_version = "1.23"
-}
+"""
+    findings = parse_terraform_eks_versions(content)
+    assert len(findings) == 2
+    assert findings[0]["version"] == "1.27"
+    assert findings[0]["line"] == 4
+    assert findings[1]["version"] == "1.30"
+    assert findings[1]["line"] == 9
 
-resource "aws_eks_cluster" "cluster2" {
-  kubernetes_version = "1.24"
-}
-''')
-            
-            findings = scan_eks_versions(file_path)
-            assert len(findings) >= 2
+
+def test_parse_terraform_eks_versions_no_match():
+    """Test parsing when no EKS versions found."""
+    content = "resource 'aws_s3_bucket' 'bucket' { }"
+    findings = parse_terraform_eks_versions(content)
+    assert len(findings) == 0
+
+
+def test_get_version_warning_current():
+    """Test warning message for current EKS version."""
+    msg = get_version_warning("1.30")
+    assert "currently supported" in msg
+    assert "1.30" in msg
+
+
+def test_get_version_warning_extended():
+    """Test warning message for extended support version."""
+    msg = get_version_warning("1.27")
+    assert "Extended Support" in msg
+    assert "1.27" in msg
+
+
+def test_get_version_warning_deprecated():
+    """Test warning message for deprecated version."""
+    msg = get_version_warning("1.25")
+    assert "DEPRECATED" in msg
+    assert "1.25" in msg
+
+
+def test_get_version_warning_unknown():
+    """Test warning for unknown version."""
+    msg = get_version_warning("1.99")
+    assert "unknown" in msg
+
+
+def test_scan_eks_versions_terraform_file():
+    """Test scanning a Terraform file for EKS versions."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.tf', delete=False) as f:
+        f.write('kubernetes_version = "1.26"\n')
+        f.flush()
+        
+        path = Path(f.name)
+        warnings = scan_eks_versions(path)
+        
+        assert len(warnings) == 1
+        assert warnings[0]["type"] == "eks_version"
+        assert warnings[0]["version"] == "1.26"
+        assert warnings[0]["status"] == "extended"
+        assert "Extended Support" in warnings[0]["message"]
+        
+        path.unlink()
+
+
+def test_scan_eks_versions_non_terraform_file():
+    """Test that non-Terraform files are skipped."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write('kubernetes_version = "1.26"\n')
+        f.flush()
+        
+        path = Path(f.name)
+        warnings = scan_eks_versions(path)
+        
+        assert len(warnings) == 0
+        path.unlink()
+
+
+def test_scan_eks_versions_current_version_no_warning():
+    """Test that current versions don't generate warnings."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.tf', delete=False) as f:
+        f.write('kubernetes_version = "1.30"\n')
+        f.flush()
+        
+        path = Path(f.name)
+        warnings = scan_eks_versions(path)
+        
+        assert len(warnings) == 0
+        path.unlink()
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

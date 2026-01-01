@@ -1,127 +1,162 @@
-"""
-Tests for GCP GKE (Google Kubernetes Engine) version detection
-Detects deprecated/extended support Kubernetes versions on Google Cloud
-"""
-
-import pytest
-from src.shieldcommit.gcp_detector import scan_gcp_versions
-from pathlib import Path
+import unittest
 import tempfile
+from pathlib import Path
+from src.shieldcommit.gcp_detector import (
+    parse_terraform_gcp_versions,
+    get_version_warning,
+    get_channel_info,
+    scan_gcp_versions,
+    GCP_VERSIONS
+)
 
 
-class TestGCPGKEVersionDetection:
-    """Test Google Cloud GKE version detection and deprecation warnings"""
+class TestGCPDetector(unittest.TestCase):
     
-    def test_detects_deprecated_gke_version(self):
-        """Should detect deprecated Kubernetes versions in GKE"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  min_master_version = "1.24"
-}
-''')
+    def test_parse_terraform_gcp_versions_explicit(self):
+        """Test parsing GCP versions from Terraform content."""
+        content = '''
+        resource "google_container_cluster" "example" {
+          min_master_version = "1.27"
+          name               = "example-gke"
+        }
+        '''
+        findings = parse_terraform_gcp_versions(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["version"], "1.27")
+        self.assertEqual(findings[0]["line"], 3)
+        self.assertEqual(findings[0]["type"], "explicit")
+    
+    def test_parse_terraform_gcp_versions_channel(self):
+        """Test parsing GCP release channel from Terraform content."""
+        content = '''
+        resource "google_container_cluster" "example" {
+          release_channel {
+            channel = "REGULAR"
+          }
+        }
+        '''
+        findings = parse_terraform_gcp_versions(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["channel"], "REGULAR")
+        self.assertEqual(findings[0]["type"], "channel")
+    
+    def test_parse_multiple_gcp_versions(self):
+        """Test parsing multiple GCP versions."""
+        content = '''
+        resource "google_container_cluster" "cluster1" {
+          min_master_version = "1.27"
+        }
+        
+        resource "google_container_cluster" "cluster2" {
+          min_master_version = "1.30"
+        }
+        '''
+        findings = parse_terraform_gcp_versions(content)
+        self.assertEqual(len(findings), 2)
+        versions = [f["version"] for f in findings if f["type"] == "explicit"]
+        self.assertIn("1.27", versions)
+        self.assertIn("1.30", versions)
+    
+    def test_get_version_warning_deprecated(self):
+        """Test warning message for deprecated version."""
+        warning = get_version_warning("1.25")
+        self.assertIn("DEPRECATED", warning)
+        self.assertIn("🚨", warning)
+        self.assertIn("2024-07", warning)
+    
+    def test_get_version_warning_extended(self):
+        """Test warning message for extended support version."""
+        warning = get_version_warning("1.27")
+        self.assertIn("Extended Support", warning)
+        self.assertIn("⚠️", warning)
+        self.assertIn("2025-04", warning)
+    
+    def test_get_version_warning_current(self):
+        """Test info message for current version."""
+        warning = get_version_warning("1.30")
+        self.assertIn("currently supported", warning)
+        self.assertIn("✓", warning)
+    
+    def test_get_version_warning_unknown(self):
+        """Test warning for unknown version."""
+        warning = get_version_warning("1.99")
+        self.assertIn("unknown", warning)
+        self.assertIn("⚠️", warning)
+    
+    def test_get_channel_info_regular(self):
+        """Test channel info for REGULAR channel."""
+        info = get_channel_info("REGULAR")
+        self.assertIn("REGULAR", info)
+        self.assertIn("production", info)
+    
+    def test_get_channel_info_rapid(self):
+        """Test channel info for RAPID channel."""
+        info = get_channel_info("RAPID")
+        self.assertIn("RAPID", info)
+    
+    def test_get_channel_info_stable(self):
+        """Test channel info for STABLE channel."""
+        info = get_channel_info("STABLE")
+        self.assertIn("STABLE", info)
+    
+    def test_scan_gcp_versions_deprecated(self):
+        """Test scanning a Terraform file for deprecated GCP versions."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            tf_file = tmp_path / "gke.tf"
+            tf_file.write_text('''
+        resource "google_container_cluster" "example" {
+          min_master_version = "1.25"
+        }
+        ''')
             
-            findings = scan_gcp_versions(file_path)
-            # Version 1.24 is deprecated on GCP
-            assert isinstance(findings, list)
+            warnings = scan_gcp_versions(tf_file)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0]["type"], "gcp_version")
+            self.assertEqual(warnings[0]["status"], "deprecated")
     
-    def test_detects_rapid_release_channel_warning(self):
-        """Should flag RAPID release channel (not recommended)"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  release_channel {
-    channel = "RAPID"
-  }
-}
-''')
+    def test_scan_gcp_versions_current(self):
+        """Test that current versions don't trigger version warnings."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            tf_file = tmp_path / "gke.tf"
+            tf_file.write_text('''
+        resource "google_container_cluster" "example" {
+          min_master_version = "1.30"
+        }
+        ''')
             
-            findings = scan_gcp_versions(file_path)
-            # RAPID channel should be flagged
-            assert isinstance(findings, list)
+            warnings = scan_gcp_versions(tf_file)
+            self.assertEqual(len(warnings), 0)
     
-    def test_no_warning_for_stable_channel(self):
-        """Should report STABLE channel with informational message"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  release_channel {
-    channel = "STABLE"
-  }
-}
-''')
+    def test_scan_gcp_channel_warning(self):
+        """Test scanning for GCP release channel."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            tf_file = tmp_path / "gke.tf"
+            tf_file.write_text('''
+        resource "google_container_cluster" "example" {
+          release_channel {
+            channel = "REGULAR"
+          }
+        }
+        ''')
             
-            findings = scan_gcp_versions(file_path)
-            # STABLE channel gets reported as informational
-            assert len(findings) >= 1
-            assert "STABLE" in findings[0]["message"]
+            warnings = scan_gcp_versions(tf_file)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0]["type"], "gcp_channel")
+            self.assertEqual(warnings[0]["channel"], "REGULAR")
     
-    def test_recommends_regular_over_rapid(self):
-        """Should prefer REGULAR channel over RAPID"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  release_channel {
-    channel = "UNSPECIFIED"
-  }
-}
-''')
+    def test_scan_gcp_versions_non_tf_file(self):
+        """Test that non-Terraform files are ignored."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            py_file = tmp_path / "script.py"
+            py_file.write_text('min_master_version = "1.25"')
             
-            findings = scan_gcp_versions(file_path)
-            assert isinstance(findings, list)
-    
-    def test_detects_version_in_node_pool(self):
-        """Should detect versions in node pool configuration"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_node_pool" "primary_nodes" {
-  version = "1.25"
-}
-''')
-            
-            findings = scan_gcp_versions(file_path)
-            assert isinstance(findings, list)
-    
-    def test_multiple_gke_clusters(self):
-        """Should detect deprecated versions in multiple GKE clusters"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  min_master_version = "1.23"
-}
+            warnings = scan_gcp_versions(py_file)
+            self.assertEqual(len(warnings), 0)
 
-resource "google_container_cluster" "secondary" {
-  min_master_version = "1.24"
-}
-''')
-            
-            findings = scan_gcp_versions(file_path)
-            assert isinstance(findings, list)
-    
-    def test_gcp_specific_fields(self):
-        """Should detect GCP-specific configuration patterns"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "gke.tf"
-            file_path.write_text('''
-resource "google_container_cluster" "primary" {
-  name     = "my-gke-cluster"
-  location = "us-central1"
-  
-  release_channel {
-    channel = "RAPID"
-  }
-  
-  node_pool {
-    version = "1.22"
-  }
-}
-''')
-            
-            findings = scan_gcp_versions(file_path)
-            assert isinstance(findings, list)
+
+if __name__ == "__main__":
+    unittest.main()

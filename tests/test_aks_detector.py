@@ -1,100 +1,112 @@
-"""
-Tests for AKS (Azure Kubernetes Service) version detection
-Detects deprecated/extended support Kubernetes versions on Azure
-"""
-
-import pytest
-from src.shieldcommit.aks_detector import scan_aks_versions
-from pathlib import Path
+import unittest
 import tempfile
+from pathlib import Path
+from src.shieldcommit.aks_detector import (
+    parse_terraform_aks_versions,
+    get_version_warning,
+    scan_aks_versions,
+    AKS_VERSIONS
+)
 
 
-class TestAKSVersionDetection:
-    """Test Azure AKS version detection and deprecation warnings"""
+class TestAKSDetector(unittest.TestCase):
     
-    def test_detects_deprecated_version(self):
-        """Should detect deprecated Kubernetes versions in AKS"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "azurerm_kubernetes_cluster" "main" {
-  kubernetes_version = "1.23"
-}
-''')
+    def test_parse_terraform_aks_versions(self):
+        """Test parsing AKS versions from Terraform content."""
+        content = '''
+        resource "azurerm_kubernetes_cluster" "example" {
+          kubernetes_version = "1.27"
+          name               = "example-aks"
+        }
+        '''
+        findings = parse_terraform_aks_versions(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["version"], "1.27")
+        self.assertEqual(findings[0]["line"], 3)
+    
+    def test_parse_multiple_versions(self):
+        """Test parsing multiple AKS versions."""
+        content = '''
+        resource "azurerm_kubernetes_cluster" "cluster1" {
+          kubernetes_version = "1.27"
+        }
+        
+        resource "azurerm_kubernetes_cluster" "cluster2" {
+          kubernetes_version = "1.30"
+        }
+        '''
+        findings = parse_terraform_aks_versions(content)
+        self.assertEqual(len(findings), 2)
+        versions = [f["version"] for f in findings]
+        self.assertIn("1.27", versions)
+        self.assertIn("1.30", versions)
+    
+    def test_get_version_warning_deprecated(self):
+        """Test warning message for deprecated version."""
+        warning = get_version_warning("1.25")
+        self.assertIn("DEPRECATED", warning)
+        self.assertIn("🚨", warning)
+        self.assertIn("2024-11", warning)
+    
+    def test_get_version_warning_extended(self):
+        """Test warning message for extended support version."""
+        warning = get_version_warning("1.27")
+        self.assertIn("Extended Support", warning)
+        self.assertIn("⚠️", warning)
+        self.assertIn("2025-07", warning)
+    
+    def test_get_version_warning_current(self):
+        """Test info message for current version."""
+        warning = get_version_warning("1.30")
+        self.assertIn("currently supported", warning)
+        self.assertIn("✓", warning)
+    
+    def test_get_version_warning_unknown(self):
+        """Test warning for unknown version."""
+        warning = get_version_warning("1.99")
+        self.assertIn("unknown", warning)
+        self.assertIn("⚠️", warning)
+    
+    def test_scan_aks_versions_tf_file(self):
+        """Test scanning a Terraform file for AKS warnings."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            tf_file = tmp_path / "cluster.tf"
+            tf_file.write_text('''
+        resource "azurerm_kubernetes_cluster" "example" {
+          kubernetes_version = "1.25"
+        }
+        ''')
             
-            findings = scan_aks_versions(file_path)
-            # Version 1.23 should be flagged
-            assert isinstance(findings, list)
+            warnings = scan_aks_versions(tf_file)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0]["type"], "aks_version")
+            self.assertEqual(warnings[0]["status"], "deprecated")
     
-    def test_detects_extended_support_version(self):
-        """Should detect versions in extended support period"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "azurerm_kubernetes_cluster" "aks" {
-  kubernetes_version = "1.25"
-}
-''')
+    def test_scan_aks_versions_current_version(self):
+        """Test that current versions don't trigger warnings."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            tf_file = tmp_path / "cluster.tf"
+            tf_file.write_text('''
+        resource "azurerm_kubernetes_cluster" "example" {
+          kubernetes_version = "1.30"
+        }
+        ''')
             
-            findings = scan_aks_versions(file_path)
-            assert isinstance(findings, list)
+            warnings = scan_aks_versions(tf_file)
+            self.assertEqual(len(warnings), 0)
     
-    def test_no_warning_for_current_version(self):
-        """Should NOT warn for current/recent versions"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "azurerm_kubernetes_cluster" "main" {
-  kubernetes_version = "1.29"
-}
-''')
+    def test_scan_aks_versions_non_tf_file(self):
+        """Test that non-Terraform files are ignored."""
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = Path(tmp_path)
+            py_file = tmp_path / "script.py"
+            py_file.write_text('kubernetes_version = "1.25"')
             
-            findings = scan_aks_versions(file_path)
-            assert len(findings) == 0
-    
-    def test_finds_version_in_variable_block(self):
-        """Should find versions declared in variable blocks"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "variables.tf"
-            file_path.write_text('''
-variable "aks_version" {
-  description = "AKS cluster version"
-  default     = "1.24"
-}
-''')
-            
-            findings = scan_aks_versions(file_path)
-            # Version 1.24 is deprecated
-            assert isinstance(findings, list)
-    
-    def test_multiple_clusters_in_file(self):
-        """Should detect deprecated versions in multiple clusters"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "main.tf"
-            file_path.write_text('''
-resource "azurerm_kubernetes_cluster" "cluster1" {
-  kubernetes_version = "1.23"
-}
+            warnings = scan_aks_versions(py_file)
+            self.assertEqual(len(warnings), 0)
 
-resource "azurerm_kubernetes_cluster" "cluster2" {
-  kubernetes_version = "1.24"
-}
-''')
-            
-            findings = scan_aks_versions(file_path)
-            assert isinstance(findings, list)
-    
-    def test_aks_specific_fields(self):
-        """Should detect AKS-specific configuration patterns"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = Path(tmpdir) / "aks.tf"
-            file_path.write_text('''
-resource "azurerm_kubernetes_cluster" "main" {
-  name                = "my-aks"
-  kubernetes_version  = "1.22"
-  node_resource_group = "MC_rg_aks_eastus"
-}
-''')
-            
-            findings = scan_aks_versions(file_path)
-            assert isinstance(findings, list)
+
+if __name__ == "__main__":
+    unittest.main()
