@@ -1,37 +1,38 @@
 # ShieldCommit 🔐 v1.0.0
 
-ShieldCommit is a lightweight security CLI tool that helps prevent accidental
-secret leaks by scanning Git commits for sensitive information such as
-cloud credentials, API keys, and tokens. Now with **intelligent detection engine**
-and **multi-cloud version checking**.
+ShieldCommit is a lightweight, intelligent security CLI tool that prevents accidental
+secret leaks by scanning Git commits for sensitive information. It detects cloud credentials,
+API keys, tokens, and more using an advanced intelligent detection engine.
 
- ![logo.png](logo.png)
+Now features **entropy-based analysis**, **semantic understanding**, and **multi-cloud version checking**.
 
-**Version**: v1.0.0 | **Status**: Production Ready ✅
+![logo.png](logo.png)
+
+**Version**: v1.0.0 | **Status**: Production Ready ✅ | **Tests**: 92/92 Passing ✅
 
 ---
 
 ## 🎉 What's New in v1.0.0
 
-### Major Upgrade: Pattern-Based → Intelligent Detection
+### Major Upgrade: From Pattern-Based to Intelligent Detection
 
-ShieldCommit v1.0.0 introduces a **revolutionary detection engine** that goes far beyond simple pattern matching:
+ShieldCommit v1.0.0 introduces a **revolutionary detection engine** that goes far beyond simple pattern matching. Instead of relying on predefined rules, it uses intelligent analysis to detect secrets:
 
-#### **From Pattern-Based (v0.x)**
+#### **Previous Approach (v0.x) - Pattern-Based**
 - ❌ Limited to predefined regex patterns
-- ❌ High false positives (many legitimate values flagged)
+- ❌ High false positives (many legitimate values incorrectly flagged)
 - ❌ High false negatives (many real secrets missed)
-- ❌ Static and inflexible patterns
-- ❌ No context awareness
+- ❌ Static and inflexible - cannot detect new secret formats
+- ❌ No context awareness - treats all strings the same
 
-#### **To Intelligent Detection (v1.0.0)** ✨
-- ✅ **Entropy-based analysis** - Detects high-randomness strings mathematically
-- ✅ **Semantic analysis** - Understands variable names and context
+#### **New Approach (v1.0.0) - Intelligent Detection** ✨
+- ✅ **Entropy-based analysis** - Mathematically detects high-randomness strings
+- ✅ **Semantic analysis** - Understands variable names and surrounding code context
 - ✅ **Format detection** - Recognizes 10+ known secret formats (AWS, Stripe, GitHub, Google, etc.)
 - ✅ **Confidence scoring** - Rates each finding from 0-100% confidence
 - ✅ **Smart false positive prevention** - 50+ exclusion patterns for legitimate values (ARNs, IPs, URLs, etc.)
 - ✅ **Context-aware** - Analyzes surrounding code for better accuracy
-- ✅ **Multi-platform support** - 6 cloud providers (AWS, Azure, Google Cloud)
+- ✅ **Adaptable** - Works on unknown secret formats using entropy analysis
 
 ### New Features
 - 🔐 **92 comprehensive tests** - Production-grade test suite
@@ -39,6 +40,26 @@ ShieldCommit v1.0.0 introduces a **revolutionary detection engine** that goes fa
 - 📊 **Detailed reporting** - Detection method, confidence level, and recommendations
 - 🎯 **Zero false positives** - Smart filtering for legitimate patterns
 - 🚀 **Production-ready** - 100% test coverage
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether you want to add features, fix bugs, improve documentation, or help with CI/CD, we'd love your help.
+
+### Quick Links
+- 📖 **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+- 🌳 **[BRANCHING.md](BRANCHING.md)** - Git branching strategy
+- 📤 **[PULL_REQUEST_PROCESS.md](PULL_REQUEST_PROCESS.md)** - PR workflow
+- 📜 **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community standards
+
+### Contribution Types
+- **feature/** - New features
+- **fix/** - Bug fixes
+- **docs/** - Documentation
+- **chore/** - CI/CD & configuration
+
+[See Contributing Guide →](CONTRIBUTING.md)
 
 ---
 
