@@ -7,6 +7,7 @@ from .gcp_detector import scan_gcp_versions
 from .azure_db_detector import scan_azure_db_versions
 from .gcp_db_detector import scan_gcp_cloudsql_versions
 
+
 def scan_file(path: Path, min_confidence: float = 0.5):
     """
     Scan a file for secrets using intelligent detection.
@@ -20,9 +21,9 @@ def scan_file(path: Path, min_confidence: float = 0.5):
 
     # Use intelligent detection instead of patterns
     detected = detect_secrets(text, min_confidence=min_confidence)
-    
+
     for finding in detected:
-        finding['file'] = str(path)
+        finding["file"] = str(path)
         findings.append(finding)
 
     return findings
@@ -36,7 +37,7 @@ def scan_files(paths):
     """
     findings = []
     warnings = []
-    
+
     for p in paths:
         p = Path(p)
         if p.is_file():
@@ -49,9 +50,5 @@ def scan_files(paths):
             warnings.extend(scan_rds_versions(p))
             warnings.extend(scan_azure_db_versions(p))
             warnings.extend(scan_gcp_cloudsql_versions(p))
-    
-    return {
-        "findings": findings,
-        "warnings": warnings
-    }
 
+    return {"findings": findings, "warnings": warnings}

@@ -22,6 +22,7 @@ EKS_VERSIONS = {
     "1.21": {"status": "deprecated", "eol": "2023-04"},
 }
 
+
 def parse_terraform_eks_versions(content: str) -> List[Dict[str, Any]]:
     """
     Parse Terraform file content for EKS cluster versions.
@@ -32,62 +33,70 @@ def parse_terraform_eks_versions(content: str) -> List[Dict[str, Any]]:
     """
     findings = []
     lines = content.splitlines()
-    
+
     # Pattern 1: Direct resource usage: kubernetes_version = "1.27"
     pattern1 = r'kubernetes_version\s*=\s*["\']([0-9]+\.[0-9]+)["\']'
-    
+
     # Pattern 2: Variable default values: default = "1.27" (for cluster_version or similar)
     pattern2 = r'default\s*=\s*["\']([0-9]+\.[0-9]+)["\']'
-    
+
     in_cluster_version_var = False
-    
+
     for line_no, line in enumerate(lines, 1):
         # Track if we're in a cluster_version variable block
-        if 'variable' in line and 'cluster_version' in line:
+        if "variable" in line and "cluster_version" in line:
             in_cluster_version_var = True
-        elif in_cluster_version_var and '}' in line:
+        elif in_cluster_version_var and "}" in line:
             in_cluster_version_var = False
-        
+
         # Check pattern 1: Direct kubernetes_version
         matches = re.finditer(pattern1, line)
         for match in matches:
             version = match.group(1)
-            findings.append({
-                "line": line_no,
-                "version": version,
-                "snippet": line.strip(),
-                "match": match.group(0)
-            })
-        
+            findings.append(
+                {
+                    "line": line_no,
+                    "version": version,
+                    "snippet": line.strip(),
+                    "match": match.group(0),
+                }
+            )
+
         # Check pattern 2: Variable default (when in cluster_version variable block)
         if in_cluster_version_var:
             matches = re.finditer(pattern2, line)
             for match in matches:
                 version = match.group(1)
-                findings.append({
-                    "line": line_no,
-                    "version": version,
-                    "snippet": line.strip(),
-                    "match": match.group(0)
-                })
-    
+                findings.append(
+                    {
+                        "line": line_no,
+                        "version": version,
+                        "snippet": line.strip(),
+                        "match": match.group(0),
+                    }
+                )
+
     return findings
+
 
 def get_version_warning(version: str) -> str:
     """Get warning message for a given EKS version."""
     if version not in EKS_VERSIONS:
         return f"⚠️  EKS version {version} is unknown. Check AWS documentation."
-    
+
     info = EKS_VERSIONS[version]
     status = info["status"]
     eol = info["eol"]
-    
+
     if status == "deprecated":
         return f"🚨 EKS {version} is DEPRECATED (EOL: {eol}). Upgrade immediately."
     elif status == "extended":
-        return f"⚠️  EKS {version} on Extended Support (EOL: {eol}). Higher costs. Consider upgrading."
+        return (
+            f"⚠️  EKS {version} on Extended Support (EOL: {eol}). Higher costs. Consider upgrading."
+        )
     else:  # current
         return f"✓ EKS {version} is currently supported (EOL: {eol})."
+
 
 def scan_eks_versions(file_path: Path) -> List[Dict[str, Any]]:
     """
@@ -95,32 +104,34 @@ def scan_eks_versions(file_path: Path) -> List[Dict[str, Any]]:
     Returns list of warnings.
     """
     warnings = []
-    
+
     # Only scan Terraform files
-    if file_path.suffix not in {'.tf', '.json'}:
+    if file_path.suffix not in {".tf", ".json"}:
         return warnings
-    
+
     try:
         content = file_path.read_text(errors="ignore")
     except Exception:
         return warnings
-    
+
     findings = parse_terraform_eks_versions(content)
-    
+
     for finding in findings:
         version = finding["version"]
         warning_msg = get_version_warning(version)
-        
+
         # Only warn on non-current versions
         if version in EKS_VERSIONS and EKS_VERSIONS[version]["status"] != "current":
-            warnings.append({
-                "file": str(file_path),
-                "line": finding["line"],
-                "type": "eks_version",
-                "version": version,
-                "status": EKS_VERSIONS[version]["status"],
-                "message": warning_msg,
-                "snippet": finding["snippet"]
-            })
-    
+            warnings.append(
+                {
+                    "file": str(file_path),
+                    "line": finding["line"],
+                    "type": "eks_version",
+                    "version": version,
+                    "status": EKS_VERSIONS[version]["status"],
+                    "message": warning_msg,
+                    "snippet": finding["snippet"],
+                }
+            )
+
     return warnings
