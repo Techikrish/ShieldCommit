@@ -201,6 +201,8 @@ Verify installation:
 shieldcommit --help
 ```
 
+**👉 New to ShieldCommit?** Start with [QUICKSTART.md](QUICKSTART.md) for a 60-second setup!
+
 ## 🔧 Getting Started (Quick Setup)
 
 **2️⃣ Initialize a Git repository (if not already)**
