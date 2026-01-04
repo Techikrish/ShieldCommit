@@ -34,7 +34,7 @@ pytest tests/ -v
 - [ ] All new and existing tests pass
 - [ ] I have updated documentation (if needed)
 - [ ] My changes do not introduce breaking changes
-- [ ] PR targets `develop` branch (not `main`)
+- [ ] PR targets `main` branch
 
 ## Additional Context
 <!-- Add any other context about the PR here -->

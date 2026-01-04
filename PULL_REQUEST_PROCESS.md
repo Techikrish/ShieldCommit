@@ -3,7 +3,7 @@
 ## 📊 PR Workflow
 
 ```
-1. Create Branch from develop
+1. Create Branch from main
    ↓
 2. Make Changes + Add Tests
    ↓
@@ -32,7 +32,7 @@
    ↓
 10. Approval ✅
     ↓
-11. Merge to develop
+11. Merge to main
     ↓
 12. Delete branch
 ```
@@ -65,7 +65,7 @@ Closes #123
 - [x] Self-review completed
 - [x] Tests updated
 - [x] Docs updated
-- [x] PR targets develop (not main)
+- [x] PR targets main
 ```
 
 ## ✅ PR Checklist
