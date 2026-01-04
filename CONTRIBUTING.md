@@ -3,7 +3,6 @@
 Thank you for your interest in contributing to ShieldCommit! This document provides guidelines and instructions for contributing.
 
 ## 📋 Table of Contents
-- [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
 - [Branching Strategy](#branching-strategy)
@@ -12,12 +11,6 @@ Thank you for your interest in contributing to ShieldCommit! This document provi
 - [Submitting Pull Requests](#submitting-pull-requests)
 - [Code Style](#code-style)
 - [Commit Messages](#commit-messages)
-
----
-
-## 📜 Code of Conduct
-
-We are committed to providing a welcoming and inspiring community. Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
@@ -67,8 +60,8 @@ We use **four types of branches**:
 
 ### 1. **feature/** - New Features
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b feature/add-slack-detection
 
 # Make changes, commit, push, create PR
@@ -77,8 +70,8 @@ git push origin feature/add-slack-detection
 
 ### 2. **fix/** - Bug Fixes
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b fix/false-positive-arns
 
 # Make changes, commit, push, create PR
@@ -87,8 +80,8 @@ git push origin fix/false-positive-arns
 
 ### 3. **docs/** - Documentation
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b docs/update-readme
 
 # Make changes, commit, push, create PR
@@ -97,8 +90,8 @@ git push origin docs/update-readme
 
 ### 4. **chore/** - CI/CD & Config
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b chore/update-dependencies
 
 # Make changes, commit, push, create PR
@@ -121,9 +114,9 @@ git push origin chore/update-dependencies
 ## 📝 Making Changes
 
 ```bash
-# 1. Create branch from develop
-git checkout develop
-git pull upstream develop
+# 1. Create branch from main
+git checkout main
+git pull upstream main
 git checkout -b feature/your-feature
 
 # 2. Make changes
@@ -141,7 +134,7 @@ git commit -m "feat: add new detection method"
 # 5. Push
 git push origin feature/your-feature
 
-# 6. Create PR on GitHub
+# 6. Create PR on GitHub (target main branch)
 ```
 
 ---
@@ -186,13 +179,13 @@ def test_my_feature(self):
 - [ ] All tests passing (92/92)
 - [ ] Coverage > 80%
 - [ ] Documentation updated
-- [ ] PR targets `develop` branch (not `main`)
+- [ ] PR targets `main` branch
 - [ ] Commit messages follow convention
 
 ### Create PR
 1. Push to your fork: `git push origin feature/your-feature`
 2. Go to GitHub and click "New Pull Request"
-3. Set Base: `develop`, Compare: `feature/your-feature`
+3. Set Base: `main`, Compare: `feature/your-feature`
 4. Fill PR template (auto-fills)
 5. Submit!
 

@@ -3,10 +3,7 @@
 ## 🌳 Branch Structure
 
 ```
-main (production, releases only)
-  ↑ (merge via release PR)
-  │
-develop (staging, next release)
+main (primary branch, all changes via PRs)
   ↑ (merge via feature/fix/docs/chore PRs)
   │
 ├─ feature/*  (new features)
@@ -22,8 +19,8 @@ develop (staging, next release)
 
 ```bash
 # Create
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b feature/add-slack-detection
 
 # Example names
@@ -32,7 +29,7 @@ git checkout -b feature/add-slack-detection
 ✅ feature/add-azure-version-check
 
 # Merge
-# Create PR: develop <- feature/add-slack-detection
+# Create PR: main <- feature/add-slack-detection
 ```
 
 ### 🐛 Fix Branches (`fix/*`)
@@ -40,8 +37,8 @@ git checkout -b feature/add-slack-detection
 
 ```bash
 # Create
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b fix/false-positive-arns
 
 # Example names
@@ -50,7 +47,7 @@ git checkout -b fix/false-positive-arns
 ✅ fix/confidence-calculation
 
 # Merge
-# Create PR: develop <- fix/false-positive-arns
+# Create PR: main <- fix/false-positive-arns
 ```
 
 ### 📚 Documentation Branches (`docs/*`)
@@ -58,8 +55,8 @@ git checkout -b fix/false-positive-arns
 
 ```bash
 # Create
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b docs/update-readme
 
 # Example names
@@ -68,7 +65,7 @@ git checkout -b docs/update-readme
 ✅ docs/installation-guide
 
 # Merge
-# Create PR: develop <- docs/update-readme
+# Create PR: main <- docs/update-readme
 ```
 
 ### 🔧 Chore Branches (`chore/*`)
@@ -76,8 +73,8 @@ git checkout -b docs/update-readme
 
 ```bash
 # Create
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b chore/update-github-actions
 
 # Example names
@@ -86,15 +83,15 @@ git checkout -b chore/update-github-actions
 ✅ chore/add-security-scanning
 
 # Merge
-# Create PR: develop <- chore/update-github-actions
+# Create PR: main <- chore/update-github-actions
 ```
 
 ## 🔄 Workflow Summary
 
 ### Create Feature
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b feature/your-feature
 # Make changes
 git add .
@@ -105,8 +102,8 @@ git push origin feature/your-feature
 
 ### Fix a Bug
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b fix/bug-name
 # Make changes + tests
 git add .
@@ -117,8 +114,8 @@ git push origin fix/bug-name
 
 ### Update Docs
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b docs/update-name
 # Make changes
 git add .
@@ -129,8 +126,8 @@ git push origin docs/update-name
 
 ### Update CI/Config
 ```bash
-git checkout develop
-git pull upstream develop
+git checkout main
+git pull upstream main
 git checkout -b chore/update-name
 # Make changes
 git add .
