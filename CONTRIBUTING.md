@@ -268,7 +268,7 @@ isort src/ tests/
 ## ❓ FAQ
 
 **Q: What branch should I target?**  
-A: Always `develop` (not `main`). `main` is for releases only.
+A: Always `main`. All changes go through PRs to main.
 
 **Q: How long until my PR is reviewed?**  
 A: Usually 1-3 days.
